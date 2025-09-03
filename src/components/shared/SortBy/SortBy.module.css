@@ -1,0 +1,18 @@
+.selectInput {
+    &::placeholder {
+      color: #0b0c7d;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 20px;
+    }
+}
+  
+.selectItem {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 17px;
+}
+  
+.selectItemHover:hover {
+    background-color: #cdd8f3;
+}

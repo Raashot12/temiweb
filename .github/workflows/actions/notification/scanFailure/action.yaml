@@ -1,0 +1,111 @@
+name: "Scan Failure Notification"
+description: "Scan failure notification via Slack"
+
+inputs:
+  actor:
+    description: "Actor"
+    default: ${{ github.actor }}
+  branch:
+    description: "Branch name"
+    default: ${{ github.head_ref || github.ref_name }}
+  repo:
+    description: "repository name"
+    default: ${{ github.event.repository.name }}
+  build:
+    description: "Build result"
+    default: ${{ github.event.repository.name }}
+  deploy:
+    description: "Deploy result"
+    default: ${{ github.event.repository.name }}
+  create_pr:
+    description: "Create PR result"
+    default: ${{ github.event.repository.name }}
+  scan:
+    description: "Scan result"
+    default: ${{ github.event.repository.name }}
+  cypress-ui:
+    description: "Cypress result"
+    default: ${{ github.event.repository.name }}
+  slack:
+    description: "Slack Webhook"
+    default: ${{ github.event.repository.name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Daily Commits
+      shell: bash
+      run: |
+        echo 'DAILY_COMMITS<<EOF' >> $GITHUB_ENV
+        git log --format=format:"The author of %h was %an, %ar%n \nThe title was: %s %n" --since=1.days >> $GITHUB_ENV
+        echo 'EOF' >> $GITHUB_ENV
+    - name: Send slack message on failure
+      id: send-notification
+      shell: bash
+      run: |
+        BUILD=$(echo ${{ inputs.build }})
+        DEPLOY=$(echo ${{ inputs.deploy }})
+        CREATEPR=$(echo ${{ inputs.create_pr }})
+        CYPRESS=$(echo ${{ inputs.cypress-ui }})
+        SCAN=$(echo ${{ inputs.scan }})
+
+        output=" "
+        if [[ $BUILD == "failure" ]];
+        then
+          output=$(echo "Build Stage")
+        elif [[ $DEPLOY == "failure" ]];
+        then
+          output=$(echo "Deploy Stage")
+        elif [[ $CYPRESS == "failure" ]];
+        then
+          output=$(echo "Cypress Stage")
+        elif [[ $SCAN == "failure" ]];
+        then
+          output=$(echo "Scan Stage")
+        elif [[ $CREATEPR == "failure" ]];
+        then
+          output=$(echo "Create-PR Stage")
+        fi
+         curl -X POST -H 'Content-type: application/json'  ${{ inputs.slack }} --data-binary @- << EOF
+                  {
+                      "mrkdwn_in": ["text"],
+                      "color": "danger",
+                      "title": "Backend deployment failed :red_circle:",
+                      "author_name": "${{ inputs.actor }}",
+                      "text": "Backend cannot be deployed to staging",
+                      "title_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "fields":
+                      [
+                          {
+                              "title": "Branch",
+                              "value": "${{ inputs.branch }}",
+                              "short": true
+                          },
+                          {
+                              "title": "Author",
+                              "value": "${{ inputs.actor }}",
+                              "short": true
+                          },
+                          {
+                             "title": "Commits for today",
+                             "value": "${{ env.DAILY_COMMITS }}",
+                             "short": false
+                          },
+                          {
+                             "title": "Cypress UI results",
+                             "value": "${{ inputs.cypress-ui }}",
+                             "short": false
+                          },
+                          {
+                              "title": "Tags",
+                              "value": "<!channel> <@U058EFFQCH0|cal> <@U01P6GX8W6B|cal> <@U02E65CKG8N|cal> <@U05FTK907U7|cal>",
+                              "short": false
+                          }
+                      ],
+                      "thumb_url": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
+                      "ts": 123456789
+                  }
+              ]
+          }
+         EOF
+

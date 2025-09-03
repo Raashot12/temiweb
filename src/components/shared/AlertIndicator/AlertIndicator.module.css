@@ -1,0 +1,28 @@
+.modalHeader {
+    display: none;
+}
+
+.modalBody {
+    background: var(--page-background);
+    padding-top: 16px;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+}
+
+.alertDisplay {
+    background: #fff;
+    border-radius: 10px;
+    border-top: 4px solid var(--alert-color);
+    padding: 8px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+}

@@ -1,0 +1,25 @@
+.controls {
+    transition: opacity 150ms ease;
+    opacity: 0;
+}
+
+.root {
+    &:hover {
+        .controls {
+            opacity: 1;
+        }
+    }
+}
+
+.indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background-color: #FFFFFF;
+    transition: width 250ms ease, background-color 250ms ease;
+  }
+  
+  .indicator[data-active] {
+    background-color: #0B0C7D !important;
+  }
+

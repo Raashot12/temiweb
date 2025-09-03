@@ -1,0 +1,26 @@
+.wrapper {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.form {
+  background-color: #edf0f8;
+  width: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+
+  @media (max-width: 48em) {
+    width: 100%;
+  }
+}
+
+.slider {
+  background-color: #677597;
+  width: 50%;
+  @media (max-width: 48em) {
+    display: none;
+  }
+}

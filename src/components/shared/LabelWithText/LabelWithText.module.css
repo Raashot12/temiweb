@@ -1,0 +1,7 @@
+.label {
+    color: var(--text);
+}
+
+.text {
+    color: var(--black-400);
+}

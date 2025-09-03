@@ -1,0 +1,3 @@
+NEXT_PUBLIC_DEV_TENANCY_NAME=myhospitaltenant
+NEXT_PUBLIC_APP_API_SERVICE_BASE_URL=https://api.domain.com
+NEXT_PUBLIC_APP_HOST_URL=app.domain.com

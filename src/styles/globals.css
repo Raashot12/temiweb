@@ -1,0 +1,85 @@
+:root {
+  --sub-text: #7a90c2;
+  --lower-text: #a6afc2;
+  --vanillar-cream: #fff5eb;
+  --text: #677597;
+  --fade: #cdd8f3;
+  --blue: #0b0c7d;
+  --french-blue: #0072bb;
+  --white: #ffffff;
+  --graph-blue: #004aff;
+  --gray-light: #d9d9d9;
+  --blue-fade-accent: #dedffc;
+  --deep-blue-fade: #2157c1;
+  --blue-accent: #d0d1fb;
+  --orange: #ff8b00;
+  --orange-deep: #cc9900;
+  --fade-orange: #ff9d33;
+  --orange-accent: #ffefdb;
+  --fade-orange-accent: #ffeedb;
+  --purple: #a22cff;
+  --purple-accent: #efdbff;
+  --chart-purple: #af40a4;
+  --cyber-grape: #58427c;
+  --green: #27ae60;
+  --light-green: #58db90;
+  --fade-blue: #d4e1fa;
+  --active-green: #3fb772;
+  --red: #ff2c2c;
+  --crimson-chart: #dc143c;
+  --fade-red: #ff4d4d;
+  --urgent: #f8a0a0;
+  --fade-red-accent: #ffdbdb;
+  --yellow: #f5b800;
+  --yellow-accent: #fff6db;
+  --yellow-deep: #d6ab00;
+  --yellow-faded-accent: #fff8db;
+  --green-accent: #e2f8eb;
+  --page-background: #edf0f8;
+  --half-fade: #dfe2e9;
+  --ghost-white: #f9f9fa;
+  --black-accent: #dee7fc;
+  --menu-background: #d7e3fc;
+  --disabled: #e6e8eb;
+  --disabled-light: #f1f3f5;
+  --layer: #e6dafe;
+  --quatre-fade: #eff1f4;
+  --lemon: #ccc333;
+  --lemon-accent: #f8f7e2;
+  --deep-blue: #0000cc;
+  --black-400: #051438;
+  --page: #f7f8fa;
+  --avatar-background: #c1cce7;
+  --blue-berry: #48499d;
+  --purple-blue: #35368d;
+  --alloy-orange: #c46210;
+  --alloy-orange-accent: #fcecde;
+  --primary-200: #5c5da8;
+  --in-between: #f9f9fa;
+  --chart-purple-fade: #f5e5f4;
+  --transparent: transparent;
+  --button-red: #ff4d4d;
+}
+.mantine-DateInput-input {
+  font-weight: 500 !important;
+}
+.mantine-Modal-header {
+  width: 100% !important;
+}
+.mantine-Input-section {
+  width: fit-content !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  padding-right: 5px !important;
+}
+@media (max-width: 74.8em) {
+  .mantine-AppShell-main {
+    padding-left: 0 !important;
+  }
+}
+
+.mantine-UnstyledButton-root:hover:where(
+    :not([data-loading], :disabled, [data-disabled])
+  ) {
+  background-color: transparent !important;
+}

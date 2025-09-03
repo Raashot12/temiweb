@@ -1,0 +1,47 @@
+name: "Scan Failure Notification"
+description: "Scan failure notification via Slack"
+
+inputs:
+  max_retries:
+    description: "Amount of Retries"
+  resource_group:
+    description: "Resource Group"
+  app_name:
+    description: "Application Name"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Deployment Status
+      shell: bash
+      run: |
+        MaxRetries=$(echo ${{ inputs.max_retries }})
+        AppName=$(echo ${{ inputs.app_name }})
+        HealthCheckPath="/health"
+        URL="https://${AppName}.azurewebsites.net${HealthCheckPath}"
+        counter=0
+        desired_status="Healthy"
+
+        check_app_health() {
+        response=$(curl -s $URL | jq -r .status)
+        echo $response
+        }
+
+        until [ $counter -ge $MaxRetries ]
+        do
+            status=$(check_app_health)
+            echo "Current status: $status"
+            
+            if [ "$status" = "$desired_status" ]; then
+                echo "App is healthy!"
+                exit 0
+            fi
+            
+            echo "Waiting for app to return $desired_status status..."
+            sleep 10
+            counter=$((counter+1))
+        done
+
+        echo "Health check timed out after $MaxRetries attempts."
+        exit 1
+

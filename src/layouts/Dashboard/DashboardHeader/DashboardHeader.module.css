@@ -1,0 +1,132 @@
+ .headerRoot {
+    background-color: var(--page-background);
+    border-bottom: "2px solid #DFE2E9";
+ }
+
+ .menuItem {
+    font-size: 16px;
+    font-weight: 500;
+ }
+
+ .badge {
+    color: var(--text);
+    text-transform: "capitalize";
+ }
+
+.menuText {
+    color: #7A90C2;;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.tab {
+    &[data-active] {
+            color: blue      
+        }
+}
+
+.avatarButton {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.avatarButton:hover {
+    background-color: none !important;
+}
+
+.menuHeaderWrapper { 
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    margin: 0 14px;
+    padding: 16px 0;
+    border-bottom: 2px solid rgba(205, 216, 243, 0.5);
+}
+
+.menuUserWrapper {
+    font-size: 16px;
+    font-weight: 600;
+    height: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-left: 12px;
+}
+
+.menuUserFullName { 
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.menuUserRole {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text)
+}
+
+.accountTypeBadge {
+    margin-left: auto;
+} 
+
+.appHeaderWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 0 32px;
+}
+
+.brandWrapper {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    justify-content: center;
+    gap: 8px;
+}
+
+.headerUserWrapper { 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.salutationWrapper {
+    display: flex;
+    margin-right: 25px;
+}
+
+.avatarWrapper {
+    display: flex;
+    align-items: center;
+    margin-left: 25px;
+}
+
+/* export const DateTimeWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+`;
+
+export const DateWrapper = styled.div`
+  color: #051438;
+`;
+
+export const TimeWrapper = styled.div`
+  color: ${appColors.text};
+  margin-left: 1rem;
+
+
+export const SwitchRoleHeader = styled.div`
+  margin-left: 12px;
+  padding: 0px, 16px, 0px, 16px;
+  gap: 4px;
+`; */

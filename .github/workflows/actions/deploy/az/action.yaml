@@ -1,0 +1,135 @@
+name: 'Build Docker Image'
+description: 'Build, tag, and push image to Amazon '
+
+inputs:
+  Registry:
+    description: 'Registry'
+    required: true
+  Repo:
+    description: 'Repo'
+    required: true
+  branch:
+    description: 'additional tag to identify latest build from branch'
+    required: true
+  branchTag:
+    description: 'additional tag to identify latest build from branch Tag'
+    default: ${{ github.sha }} 
+  clusterName:
+    description: 'ECS cluster'
+    required: true
+  nameSpace:
+    description: 'Container name'
+    required: true
+  appName:
+    description: 'ECS task definition'
+    required: true
+  imageRepository:
+    description: 'ECS task definition'
+    required: true
+  port:
+    description: 'env for respective environment'
+    required: true
+  replicas:
+    description: 'env for respective environment'
+    required: true
+  memoryLimits:
+    description: 'env for respective environment'
+    required: true
+  CPULimits:
+    description: 'env for respective environment'
+    required: true
+  CPURequests:
+    description: 'env for respective environment'
+    required: true
+  memoryRequests:
+    description: 'env for respective environment'
+    required: true
+  hosts:
+    description: 'env for respective environment'
+    required: true
+  secretName:
+    description: 'env for respective environment'
+    required: true
+  url:
+    description: 'env for respective environment'
+    required: true
+  wildcard:
+    description: 'env for respective environment'
+    default: "false"
+  healthPath:
+    description: 'env for respective environment'
+    required: true
+  healthInitialSeconds:
+    description: 'env for respective environment'
+    default: "120"
+  enableAutoscaling:
+    description: 'env for respective environment'
+    default: "false"
+  protocol:
+    description: 'env for respective environment'
+    default: "HTTP"
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Tag image from Amazon ACR
+      id: build_image
+      shell: bash
+      run: |
+        COMMIT_ID=$(echo ${{ inputs.branchTag }} | cut -c 1-7)
+        IMAGE_TAG=$(echo ${{ inputs.branch }}-$COMMIT_ID)
+        TAG=$(echo ${{ inputs.Registry }}.azurecr.io/${{ inputs.Repo }})
+        echo "image=$TAG:$IMAGE_TAG" >> $GITHUB_OUTPUT
+    - name: Deploy
+      id: deploy_image
+      shell: bash
+      run: |
+        helm repo add plateaumed https://nurdynzo.github.io/helm-chart
+        helm upgrade --install ${{ inputs.appName }} plateaumed/aks-agic \
+        -n ${{ inputs.nameSpace }} \
+        --set nameSpace=${{ inputs.nameSpace }} \
+        --set imageRepository=${{ steps.build_image.outputs.image }} \
+        --set appName=${{ inputs.appName }} \
+        --set service.port=${{ inputs.port }} \
+        --set service.protocol=${{ inputs.protocol }} \
+        --set replicas=${{ inputs.replicas }} \
+        --set resources.CPULimits=${{ inputs.CPULimits }} \
+        --set resources.memoryLimits=${{ inputs.memoryLimits }} \
+        --set resources.CPURequests=${{ inputs.CPURequests }} \
+        --set resources.memoryRequests=${{ inputs.memoryRequests }} \
+        --set hosts.url=${{ inputs.hosts }} \
+        --set hosts.secretName=${{ inputs.secretName }} \
+        --set hosts.wildcard=${{ inputs.wildcard }} \
+        --set health.probe.path=${{ inputs.healthPath }} \
+        --set health.probe.initialDelaySeconds=${{ inputs.healthInitialSeconds }} \
+        --set autoscaling.enabled=${{ inputs.enableAutoscaling }}
+    - name: Check App Status
+      id: check_app
+      shell: bash
+      run: |
+        MaxRetries=30
+        counter=0
+        
+        check_deploy_availability() {
+            unavailable=$(kubectl describe deploy ${{ inputs.appName }} -n ${{ inputs.nameSpace }} | grep Replicas | grep unavailable | tr -s " "  | cut -d " " -f 14)
+            echo $unavailable
+        }
+        
+        until [ $counter -ge $MaxRetries ]
+        do
+            status=$(check_deploy_availability)
+            # echo "Current status: $status"
+            
+            if [ "$status" = 0 ]; then
+                echo "App is healthy!"
+                exit 0
+            fi
+            
+            echo "Waiting for app to return healthy status..."
+            sleep 10
+            counter=$((counter+1))
+        done
+        
+        echo "Health check timed out after $MaxRetries attempts."
+        exit 1

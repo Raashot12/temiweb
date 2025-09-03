@@ -1,0 +1,50 @@
+.modalHeader {
+    background: #EDF0F8;
+    min-height: 3.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modalTitle {
+    width: 100%;
+}
+
+.modalBody {
+    background-color: #EDF0F8;
+    height: 100%;
+}
+
+.modalContent {
+    background-color: #EDF0F8;
+}
+
+.modalClose {
+    margin-left: 1rem;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    background: var(--halfFade);
+    color: var(--blue);
+}
+
+.confirmationContents {
+    background-color: white;
+    padding: 10px;
+    border-radius: 0.625rem;
+    margin-bottom: 1.2rem;
+}
+
+.confirmationContents .mantine-Stack-root {
+    gap: 0.5rem;
+}
+
+.confirmationButtonsWrapper {
+    width: 100%;
+    justify-content: end;
+    align-items: end;
+    gap: 20px;
+    position: sticky;
+    bottom: 0px;
+    flex: 1;
+}

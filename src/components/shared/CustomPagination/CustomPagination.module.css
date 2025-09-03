@@ -1,0 +1,39 @@
+.container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    font-weight: 600;
+}
+
+.mobileDisplay {
+    display: flex;
+    align-items: center;
+}
+
+.hidden {
+    display: none;
+}
+
+.paginationText {
+    font-size: 16px;
+    color: #677597;
+}
+
+.primaryText {
+    color: #051438;
+}
+
+.paginationWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.paginateColor {
+    font-style: normal;
+    font-weight: 500;
+
+    /* line-height: 16px; */
+    color: var(--color);
+    font-size: var(--fontSize);
+}

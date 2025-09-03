@@ -1,0 +1,18 @@
+.filterSelect {
+   
+        color: #051438;
+        font-weight: 600;
+        font-size: 16px;
+        line-height: 16px;
+   
+
+    & .mantine-Select-rightSection {
+        margin-right: 100px;
+    }
+}
+
+.selectItem {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 17px;
+}

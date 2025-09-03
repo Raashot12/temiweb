@@ -1,0 +1,58 @@
+name: 'Build Docker Image'
+description: 'Build, tag, and push image to Amazon '
+
+inputs:
+  Registry:
+    description: 'Registry'
+    required: true
+  Repo:
+    description: 'Repo'
+    required: true
+  branch:
+    description: 'additional tag to identify latest build from branch'
+    required: true
+  branchTag:
+    description: 'additional tag to identify latest build from branch Tag'
+    default: ${{ github.sha }} 
+  clusterName:
+    description: 'ECS cluster'
+    required: true
+  resourceGroup:
+    description: 'ECS service'
+    required: true
+  clientId:
+    description: 'ECS service'
+    required: true
+  tenantId:
+    description: 'ECS service'
+    required: true
+  subscriptionId:
+    description: 'ECS service'
+    required: true
+
+outputs:
+  image:
+    description: 'ECR Registry'
+    value: ${{ steps.build_image.outputs.image }}
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Azure login
+      uses: azure/login@v1.4.6
+      with:
+        client-id: ${{ inputs.clientId }}
+        tenant-id: ${{ inputs.tenantId }}
+        subscription-id: ${{ inputs.subscriptionId }}  
+    - name: Set up kubelogin for non-interactive login
+      uses: azure/use-kubelogin@v1
+      with:
+        kubelogin-version: 'v0.0.25'
+    - name: Get K8s context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: ${{ inputs.resourceGroup }}
+        cluster-name: ${{ inputs.clusterName }}
+        admin: 'false'
+        use-kubelogin: 'true'

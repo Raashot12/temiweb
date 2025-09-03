@@ -1,0 +1,37 @@
+name: 'Build Docker Image'
+description: 'Build, tag, and push image to Amazon ECR'
+
+inputs:
+  Registry:
+    description: 'Registry'
+    required: true
+  Repo:
+    description: 'Repo'
+    required: true
+  branch:
+    description: 'additional tag to identify latest build from branch'
+    required: true
+  branchTag:
+    description: 'additional tag to identify latest build from branch Tag'
+    default: ${{ github.sha }} 
+
+outputs:
+  image:
+    description: 'ECR Registry'
+    value: ${{ steps.build_image.outputs.image }}
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Build, tag, and push image 
+      id: build_image
+      shell: bash
+      run: |
+        az acr login --name ${{ inputs.Registry }}
+        COMMIT_ID=$(echo ${{ inputs.branchTag }} | cut -c 1-7)
+        IMAGE_TAG=$(echo ${{ inputs.branch }}-$COMMIT_ID)
+        TAG=$(echo ${{ inputs.Registry }}/${{ inputs.Repo }})
+        docker build -t $TAG:$IMAGE_TAG .
+        docker push $TAG:$IMAGE_TAG
+        echo "image=$TAG:$IMAGE_TAG" >> $GITHUB_OUTPUT

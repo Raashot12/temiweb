@@ -1,0 +1,16 @@
+.noHoverRoot {
+    transition: none !important;
+  }
+  
+  /* stop ALL visual changes on state */
+  .noHoverRoot:hover,
+  .noHoverRoot[data-hovered],
+  .noHoverRoot:focus,
+  .noHoverRoot:focus-visible,
+  .noHoverRoot:active,
+  .noHoverRoot[data-pressed] {
+    background-color: var(--button-bg) !important;
+    color: var(--button-color) !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
