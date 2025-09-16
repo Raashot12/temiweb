@@ -1,12 +1,22 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import { Button, Grid, Group, Stack, Text, Textarea } from "@mantine/core";
-import { CustomModal } from "@/components/shared/CustomModal";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { VitalSignsForm, vitalSignsSchema, computeBMI } from "./schema";
-import { CustomFormNumberInput } from "@/components/shared/CustomTextInput";
+import React, { useEffect } from 'react';
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  Group,
+  Stack,
+  Text,
+  Textarea,
+} from '@mantine/core';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { VitalSignsForm, vitalSignsSchema, computeBMI } from './schema';
+import { CustomFormNumberInput } from '@/components/shared/CustomTextInput';
+import ModalLayoutWrapper from '@/components/shared/ModalLayoutWrapper';
+import IconCloseModal from '@/components/shared/IconComponents/IconCloseModal';
 
 export type VitalSignsModalProps = {
   opened: boolean;
@@ -37,40 +47,49 @@ const VitalSignsModal: React.FC<VitalSignsModalProps> = ({
       diastolic: defaultValues?.diastolic ?? ('' as unknown as number),
       heartRate: defaultValues?.heartRate ?? ('' as unknown as number),
       temperature: defaultValues?.temperature ?? ('' as unknown as number),
-      respiratoryRate: defaultValues?.respiratoryRate ?? ('' as unknown as number),
+      respiratoryRate:
+        defaultValues?.respiratoryRate ?? ('' as unknown as number),
       spo2: defaultValues?.spo2 ?? ('' as unknown as number),
       heightCm: defaultValues?.heightCm ?? ('' as unknown as number),
       weightKg: defaultValues?.weightKg ?? ('' as unknown as number),
       bmi: defaultValues?.bmi ?? ('' as unknown as number),
-      notes: defaultValues?.notes ?? "",
+      notes: defaultValues?.notes ?? '',
     } as unknown as VitalSignsForm,
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   // Sync default values on open
   useEffect(() => {
     if (opened) {
       reset({
-        systolic: (defaultValues?.systolic ?? ('' as unknown as number)) as number,
-        diastolic: (defaultValues?.diastolic ?? ('' as unknown as number)) as number,
-        heartRate: (defaultValues?.heartRate ?? ('' as unknown as number)) as number,
-        temperature: (defaultValues?.temperature ?? ('' as unknown as number)) as number,
-        respiratoryRate: (defaultValues?.respiratoryRate ?? ('' as unknown as number)) as number,
+        systolic: (defaultValues?.systolic ??
+          ('' as unknown as number)) as number,
+        diastolic: (defaultValues?.diastolic ??
+          ('' as unknown as number)) as number,
+        heartRate: (defaultValues?.heartRate ??
+          ('' as unknown as number)) as number,
+        temperature: (defaultValues?.temperature ??
+          ('' as unknown as number)) as number,
+        respiratoryRate: (defaultValues?.respiratoryRate ??
+          ('' as unknown as number)) as number,
         spo2: (defaultValues?.spo2 ?? ('' as unknown as number)) as number,
-        heightCm: (defaultValues?.heightCm ?? ('' as unknown as number)) as number,
-        weightKg: (defaultValues?.weightKg ?? ('' as unknown as number)) as number,
+        heightCm: (defaultValues?.heightCm ??
+          ('' as unknown as number)) as number,
+        weightKg: (defaultValues?.weightKg ??
+          ('' as unknown as number)) as number,
         bmi: (defaultValues?.bmi ?? ('' as unknown as number)) as number,
-        notes: defaultValues?.notes ?? "",
+        notes: defaultValues?.notes ?? '',
       } as unknown as VitalSignsForm);
     }
   }, [opened, defaultValues, reset]);
 
-  const h = watch("heightCm");
-  const w = watch("weightKg");
+  const h = watch('heightCm');
+  const w = watch('weightKg');
 
   useEffect(() => {
     const bmi = computeBMI(h as number, w as number);
-    if (bmi) setValue("bmi", bmi as unknown as number, { shouldValidate: true });
+    if (bmi)
+      setValue('bmi', bmi as unknown as number, { shouldValidate: true });
   }, [h, w, setValue]);
 
   const submit = (data: VitalSignsForm) => {
@@ -78,17 +97,32 @@ const VitalSignsModal: React.FC<VitalSignsModalProps> = ({
   };
 
   return (
-    <CustomModal
-      opened={opened}
-      onClose={onClose}
-      title={<Text fw={600}>Take Vital Signs</Text>}
-      size="lg"
-      radius="md"
+    <ModalLayoutWrapper
+      open={opened}
+      title={
+        <Flex justify="space-between" align="center">
+          <Box>
+            <Text fw={600}>Take Vital Signs</Text>
+            <Text c="dimmed" size="sm">
+              {patient.name} • {patient.id}
+            </Text>
+          </Box>
+          <IconCloseModal handleClose={onClose} />
+        </Flex>
+      }
+      size="50"
+      footer={
+        <Group justify="flex-end" mt="sm">
+          <Button variant="light" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button loading={isSubmitting} onClick={handleSubmit(submit)}>
+            Save and send to triage
+          </Button>
+        </Group>
+      }
     >
-      <Stack>
-        <Text c="dimmed" size="sm">
-          {patient.name} • {patient.id}
-        </Text>
+      <Stack mt={16}>
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6 }}>
             <CustomFormNumberInput<VitalSignsForm>
@@ -208,16 +242,8 @@ const VitalSignsModal: React.FC<VitalSignsModalProps> = ({
             />
           </Grid.Col>
         </Grid>
-        <Group justify="flex-end" mt="sm">
-          <Button variant="light" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button loading={isSubmitting} onClick={handleSubmit(submit)}>
-            Save and send to triage
-          </Button>
-        </Group>
       </Stack>
-    </CustomModal>
+    </ModalLayoutWrapper>
   );
 };
 

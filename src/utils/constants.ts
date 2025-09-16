@@ -50,7 +50,7 @@ export const statusColors: StatusColors = {
     color: '#FF4D4D',
     text: 'Registration fee not paid',
   },
-  "Unpaid": { bg: '#FFDBDB', color: '#FF4D4D', text: 'Unpaid' },
+  Unpaid: { bg: '#FFDBDB', color: '#FF4D4D', text: 'Unpaid' },
   Scheduled: { bg: '#F5E5F4', color: '#AF40A4', text: 'Invoiced' },
   'Not scheduled': { bg: '#FFDBDB', color: '#FF4D4D', text: 'Not scheduled' },
   'Supplied on credit': {
@@ -177,3 +177,19 @@ export const FACILITY_TYPES = {
   Unit: 'Unit',
   Clinic: 'Clinic',
 } as const;
+
+export const statusMappingForFilter: { [key: string]: string } = {
+  Requested: 'Requested',
+  'All Investigations': 'All Investigations',
+  Invoiced: 'Invoiced',
+  Processing: 'Processing',
+  'Result Ready': 'ResultReady',
+  'Image Ready': 'ImageReady',
+  'Awaiting Review': 'AwaitingReview',
+  'Report Ready': 'ReportReady',
+};
+// Utils
+export const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(
+    amount,
+  );

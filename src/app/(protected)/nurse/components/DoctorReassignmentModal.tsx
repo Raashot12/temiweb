@@ -12,8 +12,11 @@ import {
   Avatar,
   ScrollArea,
   Divider,
+  Flex,
 } from '@mantine/core';
 import { IconSearch, IconCheck } from '@tabler/icons-react';
+import ModalLayoutWrapper from '@/components/shared/ModalLayoutWrapper';
+import IconCloseModal from '@/components/shared/IconComponents/IconCloseModal';
 
 type DoctorInfo = {
   id: string;
@@ -112,109 +115,112 @@ const DoctorReassignmentModal = ({
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={handleClose}
+    <ModalLayoutWrapper
+      open={opened}
       title={
+        <Flex justify="space-between" align="center">
+          <Box>
+            <Text fw={600} size="lg">
+              Reassign Doctor
+            </Text>
+            <Text size="sm" c="dimmed">
+              {patient.name} • {patient.id}
+            </Text>
+          </Box>
+          <IconCloseModal handleClose={handleClose} />
+        </Flex>
+      }
+      footer={
         <Box>
-          <Text fw={600} size="lg">
-            Reassign Doctor
-          </Text>
-          <Text size="sm" c="dimmed">
-            {patient.name} • {patient.id}
-          </Text>
+          <Divider mb={10} />
+          <Group justify="flex-end">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReassign}
+              disabled={
+                !selectedDoctor || selectedDoctor?.id === currentDoctor?.id
+              }
+            >
+              Reassign
+            </Button>
+          </Group>
         </Box>
       }
-      size="md"
-      centered
+      size="50"
     >
-      <Stack gap="md">
+      <Stack gap="md" mt={16}>
         <TextInput
           placeholder="Search doctors by name or specialization..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          leftSection={<IconSearch size={16} />}
+          leftSection={<IconSearch size={20} />}
         />
 
-        <ScrollArea h={300}>
-          <Stack gap="xs">
-            {filteredDoctors.map((doctor) => {
-              const isSelected = selectedDoctor?.id === doctor.id;
-              const isCurrent = currentDoctor?.id === doctor.id;
+        <Stack gap="xs">
+          {filteredDoctors.map((doctor) => {
+            const isSelected = selectedDoctor?.id === doctor.id;
+            const isCurrent = currentDoctor?.id === doctor.id;
 
-              return (
-                <Box
-                  key={doctor.id}
-                  p="sm"
-                  style={{
-                    border: `1px solid ${isSelected ? '#228be6' : '#e9ecef'}`,
-                    borderRadius: '8px',
-                    backgroundColor: isSelected ? '#f8f9ff' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setSelectedDoctor(doctor)}
-                >
-                  <Group justify="space-between">
-                    <Group>
-                      <Avatar
-                        size="md"
-                        color="blue"
-                        radius="xl"
-                        src={doctor.avatar}
-                      >
-                        {doctor.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
-                      </Avatar>
-                      <Box>
-                        <Group gap="xs">
-                          <Text fw={600} size="sm">
-                            {doctor.name}
-                          </Text>
-                          {isCurrent && (
-                            <Text
-                              size="xs"
-                              c="blue"
-                              fw={600}
-                              style={{
-                                backgroundColor: '#e7f5ff',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                              }}
-                            >
-                              Current
-                            </Text>
-                          )}
-                        </Group>
-                        <Text size="xs" c="dimmed">
-                          {doctor.specialization}
+            return (
+              <Box
+                key={doctor.id}
+                p="sm"
+                style={{
+                  border: `1px solid ${isSelected ? '#228be6' : '#e9ecef'}`,
+                  borderRadius: '8px',
+                  backgroundColor: isSelected ? '#f8f9ff' : 'transparent',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setSelectedDoctor(doctor)}
+              >
+                <Group justify="space-between">
+                  <Group>
+                    <Avatar
+                      size="md"
+                      color="blue"
+                      radius="xl"
+                      src={doctor.avatar}
+                    >
+                      {doctor.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')}
+                    </Avatar>
+                    <Box>
+                      <Group gap="xs">
+                        <Text fw={600} size="sm">
+                          {doctor.name}
                         </Text>
-                      </Box>
-                    </Group>
-                    {isSelected && <IconCheck size={20} color="#228be6" />}
+                        {isCurrent && (
+                          <Text
+                            size="xs"
+                            c="blue"
+                            fw={600}
+                            style={{
+                              backgroundColor: '#e7f5ff',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            Current
+                          </Text>
+                        )}
+                      </Group>
+                      <Text size="xs" c="dimmed">
+                        {doctor.specialization}
+                      </Text>
+                    </Box>
                   </Group>
-                </Box>
-              );
-            })}
-          </Stack>
-        </ScrollArea>
-
-        <Divider />
-
-        <Group justify="flex-end">
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleReassign}
-            disabled={!selectedDoctor || selectedDoctor?.id === currentDoctor?.id}
-          >
-            Reassign
-          </Button>
-        </Group>
+                  {isSelected && <IconCheck size={20} color="#228be6" />}
+                </Group>
+              </Box>
+            );
+          })}
+        </Stack>
       </Stack>
-    </Modal>
+    </ModalLayoutWrapper>
   );
 };
 

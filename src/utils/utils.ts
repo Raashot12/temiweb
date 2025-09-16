@@ -46,3 +46,21 @@ export const genderAbbreviations: Record<string, string> = {
   Male: 'M',
   Female: 'F',
 };
+export type NestedApiResponse = {
+  error: {
+    status: number;
+    data: {
+      result: null;
+      targetUrl: null;
+      success: boolean;
+      error: {
+        code: number;
+        message: string;
+        details: null;
+        validationErrors: null;
+      };
+      unAuthorizedRequest: boolean;
+      __abp: boolean;
+    };
+  };
+};

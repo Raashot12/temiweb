@@ -2,13 +2,12 @@
 import { Box, Flex, Select, TextInput } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import IconSort from '@/components/shared/IconComponents/IconSort';
-import { IoFilter } from 'react-icons/io5';
 import { Pagination } from '@/components/shared/CustomPagination';
 import { appColors } from '@/theme/colors';
 import IconSearch from '@/components/shared/IconComponents/IconSearch';
 import { SORT_DATA } from '../../receiptionist/components/constant';
 
-const NurseHeader = ({
+const DoctorHeader = ({
   totalItems,
   onPaginationChange,
   search,
@@ -20,7 +19,6 @@ const NurseHeader = ({
   onSearchChange: (search: string) => void;
 }) => {
   const isMobile = useMediaQuery('(max-width: 50rem)');
-  const ALL_CLINICS = { label: 'All clinics', value: '' };
 
   return (
     <Flex
@@ -47,9 +45,7 @@ const NurseHeader = ({
               width: '100%',
               boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.1)',
             }}
-            placeholder="Search patient"
-            data-cy={'laboratory-patient-search'}
-            data-testid={'search-on-lab-queue-head'}
+            placeholder="Find patient"
             rightSection={<IconSearch size={18} />}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -70,24 +66,9 @@ const NurseHeader = ({
               lineHeight: '22px',
             }}
           >
-            Patients queued for vitals
+            Today’s patients
           </Box>
           <Flex align={'center'} columnGap={20}>
-            <Select
-              leftSection={<IoFilter color="#3E8BCF" />}
-              data={[ALL_CLINICS]}
-              defaultValue=""
-              variant="unstyled"
-              styles={{
-                input: {
-                  color: '#051438',
-                  fontWeight: 500,
-                  fontSize: 16,
-                  lineHeight: '20px',
-                  width: 'auto',
-                },
-              }}
-            />
             <Select
               placeholder={'Sort by'}
               variant="unstyled"
@@ -125,4 +106,4 @@ const NurseHeader = ({
   );
 };
 
-export default NurseHeader;
+export default DoctorHeader;

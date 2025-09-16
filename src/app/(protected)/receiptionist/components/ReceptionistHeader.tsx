@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 import { Box, Button, Flex, Select, TextInput } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
@@ -33,12 +34,10 @@ const AddNewPatientButton = ({
 const ReceptionistHeader = ({
   totalItems,
   onPaginationChange,
-  setPatientModal,
   setShowAddPatientModal,
 }: {
   totalItems: number;
   onPaginationChange: ({ from, to }: { from: number; to: number }) => void;
-  setPatientModal?: (args: boolean) => void;
   setShowAddPatientModal?: (args: boolean) => void;
 }) => {
   const isMobile = useMediaQuery('(max-width: 50rem)');
@@ -99,7 +98,7 @@ const ReceptionistHeader = ({
               lineHeight: '22px',
             }}
           >
-            Appointments
+            Today's Appointments
           </Box>
           <Flex align={'center'} columnGap={20}>
             <Select

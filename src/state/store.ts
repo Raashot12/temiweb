@@ -11,6 +11,7 @@ import finalizeSetupSlice from "./features/onboarding/finalizeSetupSlice";
 import filterAndSortProviderReducer from "./features/provider/filterAndSortProvidersSlice";
 import filterAndSortPlansReducer from "./features/plans/filterAndSortPlansSlice";
 import newlyRegisteredTenantReducer from "./features/newlyRegisteredTenant/newlyRegisteredTenantSlice";
+import vaccinationReducer from "./features/allInput/vaccination";
 
 const rootReducer = combineReducers({
   nav: navReducer,
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   finalize: finalizeSetupSlice,
   filterAndSortProvider: filterAndSortProviderReducer,
   filterAndSortPlans: filterAndSortPlansReducer,
+  vaccination: vaccinationReducer,
 });
 export const setupStore = (preloadedState?: PreloadedState<RootState>) => {
   return configureStore({

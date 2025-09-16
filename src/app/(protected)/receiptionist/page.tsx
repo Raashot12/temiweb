@@ -4,6 +4,7 @@
 import React, { useMemo, useState } from 'react';
 import Dashboard from '@/layouts/Dashboard';
 import {
+  Avatar,
   Badge,
   Box,
   Button,
@@ -30,8 +31,10 @@ import {
   IconAlertCircle,
   IconCheck,
   IconX,
+  IconUser,
 } from '@tabler/icons-react';
 import AddPatientModal from '@/components/shared/AddPatientModal';
+import { appColors } from '@/theme/colors';
 
 // Types
 type PatientInfo = {
@@ -240,7 +243,9 @@ const ReceiptionistPage = () => {
       render: (a) => (
         <Box>
           <Group>
-            <IconUserGray size={28} />
+            <Avatar size="md" radius="xl" bg={appColors.ghostWhite}>
+              <IconUser size={20} color={appColors.blue} />
+            </Avatar>
             <Text fw={600} style={{ whiteSpace: 'nowrap' }}>
               {a.patientInfo.fullName}
             </Text>
@@ -447,27 +452,15 @@ const ReceiptionistPage = () => {
 
   return (
     <Dashboard title="Reception">
-      <Box p="md">
-        {/* Actions */}
-        {/* <Group justify="space-between" mb="md"> */}
-        {/* <Title order={3}>Reception</Title>
-          <Group>
-            <Button onClick={() => setShowPatientModal(true)}>Register New Patient</Button>
-            <Button variant="light">Check-in Patient</Button>
-          </Group>
-        </Group> */}
+      <Box>
         <ReceptionistHeader
           totalItems={appointments.length}
           onPaginationChange={() => {}}
           setShowAddPatientModal={setShowAddPatientModal}
-          
         />
 
         {/* Today's Appointments */}
         <Stack gap="sm">
-          <Group justify="space-between" align="center">
-            <Text fw={600}>Today's Appointments</Text>
-          </Group>
           <TableGrid columns={columns} data={appointments} rowKey="patientId" />
         </Stack>
 
@@ -479,7 +472,6 @@ const ReceiptionistPage = () => {
           radius="md"
           size="lg"
         >
-          {/* <ScrollArea h={360} type="auto"> */}
           <Stack gap="sm">
             <TextInput
               label="First name"
@@ -504,7 +496,6 @@ const ReceiptionistPage = () => {
               </Button>
             </Group>
           </Stack>
-          {/* </ScrollArea> */}
         </Modal>
 
         {/* Next of Kin Modal */}
