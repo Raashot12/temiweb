@@ -1,5 +1,5 @@
 import * as React from "react";
-const IconCloseModal = ({handleClose}: {handleClose: () => void}) => (
+const IconCloseModal = ({handleClose}: {handleClose?: () => void}) => (
   <svg
     width={32}
     height={32}

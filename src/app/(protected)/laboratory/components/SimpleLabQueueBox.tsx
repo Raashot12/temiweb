@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Flex,
@@ -22,6 +22,8 @@ import {
   IconReceipt,
   IconPrinter,
   IconFileTypePdf,
+  IconCash,
+  IconCreditCard,
 } from '@tabler/icons-react';
 import { appColors } from '@/theme/colors';
 import {
@@ -35,11 +37,14 @@ import '@/components/shared/TiptapEditor.css';
 import { IconThreeDots } from '@/components/shared/IconComponents/IconThreeDots';
 import ModalLayoutWrapper from '@/components/shared/ModalLayoutWrapper';
 import IconCloseModal from '@/components/shared/IconComponents/IconCloseModal';
+import LabPaymentModal from './LabPaymentModal';
+import ViewPatientInfoModal from './ViewPatientInfoModal';
+import LabBulkPaymentModal from './LabBulkPaymentModal';
+import { showNotification } from '@mantine/notifications';
 
 interface SimpleLabQueueBoxProps {
   patientId: number;
   value: InvestigationsForLaboratoryQueueResponse;
-  refetch: () => void;
   sortby?: string;
 }
 
@@ -51,7 +56,7 @@ const getStatusColor = (status: string) => {
     'Image Ready': { color: '#2F80ED', bg: '#E3F2FD' },
     'Awaiting Review': { color: '#F2994A', bg: '#FFF8E1' },
     'Report Ready': { color: '#9B51E0', bg: '#F3E5F5' },
-    Processing: { color: '#6C757D', bg: '#F8F9FA' },
+    Processing: { color: '#2196F3', bg: '#E3F2FD' },
     Invoiced: { color: '#17A2B8', bg: '#E1F7FA' },
   };
   return statusColors[status] || { color: '#6C757D', bg: '#F8F9FA' };
@@ -70,7 +75,6 @@ const formatDate = (dateString: string) => {
 const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
   patientId,
   value,
-  refetch,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [resultModalOpened, setResultModalOpened] = useState(false);
@@ -82,6 +86,18 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
   const [invoiceModalOpened, setInvoiceModalOpened] = useState(false);
   const [selectedInvoiceInvestigation, setSelectedInvoiceInvestigation] =
     useState<InvestigationResponseList | null>(null);
+  const [paymentModalOpened, setPaymentModalOpened] = useState(false);
+  const [selectedPaymentInvestigation, setSelectedPaymentInvestigation] =
+    useState<InvestigationResponseList | null>(null);
+  const [patientInfoModalOpened, setPatientInfoModalOpened] = useState(false);
+  const [
+    selectedPatientInfoInvestigation,
+    setSelectedPatientInfoInvestigation,
+  ] = useState<InvestigationResponseList | null>(null);
+  const [bulkPaymentModalOpened, setBulkPaymentModalOpened] = useState(false);
+  const [bulkPaymentMethod, setBulkPaymentMethod] = useState<string>('wallet');
+  const [bulkPaymentAmount, setBulkPaymentAmount] = useState<number>(0);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [localInvestigations, setLocalInvestigations] = useState(
     value.investigationItems || [],
   );
@@ -97,6 +113,27 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
   const previewInvestigations = investigations.slice(0, 4);
   const additionalCount = Math.max(0, investigations.length - 4);
 
+  // Calculate outstanding amounts for bulk payment - memoize to prevent unnecessary recalculations
+  const outstandingInvestigations = useMemo(
+    () =>
+      investigations.filter(
+        (inv) =>
+          inv.paymentStatus === 'Unpaid' ||
+          inv.paymentStatus === 'Partially Paid',
+      ),
+    [investigations],
+  );
+
+  const totalOutstanding = useMemo(
+    () =>
+      outstandingInvestigations.reduce((total, inv) => {
+        const amount = inv.amount?.amount || 0;
+        const partialAmount = (inv as any).partialAmount || 0;
+        return total + (amount - partialAmount);
+      }, 0),
+    [outstandingInvestigations],
+  );
+
   const handleCreateInvoice = () => {
     console.log('Create invoice for patient:', patientId);
     // Mock invoice creation
@@ -104,14 +141,36 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
 
   // Action handlers for menu items
   const handleEnterResult = (investigation: InvestigationResponseList) => {
+    // Check investigation status - must be 'Processing' to enter results
+    const currentStatus = investigation.status || 'Requested';
+
+    if (currentStatus === 'Requested') {
+      showNotification({
+        title: 'Payment Required',
+        message:
+          'Investigation must be paid first. Status will change to "Processing" after payment.',
+        color: 'orange',
+      });
+      return;
+    }
+
+    if (currentStatus !== 'Processing') {
+      showNotification({
+        title: 'Invalid Status',
+        message: `Results can only be entered when status is "Processing". Current status: ${currentStatus}`,
+        color: 'red',
+      });
+      return;
+    }
+
     setSelectedInvestigation(investigation);
     setEditorContent('');
     setResultModalOpened(true);
   };
 
   const handleViewTestInfo = (investigation: InvestigationResponseList) => {
-    console.log('View test info for:', investigation.investigationName);
-    // TODO: Implement view test info functionality
+    setSelectedPatientInfoInvestigation(investigation);
+    setPatientInfoModalOpened(true);
   };
 
   const handleViewInvoice = (investigation: InvestigationResponseList) => {
@@ -124,7 +183,110 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
     setSelectedInvoiceInvestigation(null);
   };
 
-  const handleDownloadResult = async (investigation: InvestigationResponseList) => {
+  // Payment handlers
+  const handleProcessPayment = (investigation: InvestigationResponseList) => {
+    setSelectedPaymentInvestigation(investigation);
+    setPaymentModalOpened(true);
+  };
+
+  const handleClosePaymentModal = () => {
+    setPaymentModalOpened(false);
+    setSelectedPaymentInvestigation(null);
+  };
+
+  const handlePaymentSuccess = () => {
+    // Update investigation status after successful payment
+    if (selectedPaymentInvestigation) {
+      const investigationName =
+        selectedPaymentInvestigation.investigationName?.toLowerCase() || '';
+
+      // Check if it's a scan investigation - these go directly to 'Report Ready'
+      const isScanInvestigation =
+        investigationName.includes('x-ray') ||
+        investigationName.includes('ct') ||
+        investigationName.includes('mri') ||
+        investigationName.includes('scan') ||
+        investigationName.includes('ultrasound') ||
+        investigationName.includes('echo') ||
+        investigationName.includes('mammogram');
+
+      const newStatus = isScanInvestigation ? 'Report Ready' : 'Processing';
+
+      const updatedInvestigations = investigations.map((inv) =>
+        inv.investigationRequestId ===
+        selectedPaymentInvestigation.investigationRequestId
+          ? {
+              ...inv,
+              paymentStatus: 'Paid',
+              status: newStatus, // 'Report Ready' for scans, 'Processing' for lab tests
+            }
+          : inv,
+      );
+      setLocalInvestigations(updatedInvestigations);
+    }
+  };
+
+  // Patient info handlers
+  const handleClosePatientInfoModal = () => {
+    setPatientInfoModalOpened(false);
+    setSelectedPatientInfoInvestigation(null);
+  };
+
+  // Bulk payment handlers
+  const handleBulkPayment = () => {
+    if (totalOutstanding > 0) {
+      setBulkPaymentAmount(totalOutstanding);
+      setBulkPaymentModalOpened(true);
+    }
+  };
+
+  const handleCloseBulkPaymentModal = () => {
+    setBulkPaymentModalOpened(false);
+    setBulkPaymentMethod('wallet');
+    setBulkPaymentAmount(0);
+    setIsBulkProcessing(false);
+  };
+
+  const handleBulkPaymentSuccess = () => {
+    // Update all outstanding investigations status after successful bulk payment
+    const updatedInvestigations = investigations.map((inv) => {
+      const isOutstanding =
+        inv.paymentStatus === 'Unpaid' ||
+        inv.paymentStatus === 'Partially Paid';
+
+      if (isOutstanding) {
+        const investigationName = inv.investigationName?.toLowerCase() || '';
+
+        // Check if it's a scan investigation - these go directly to 'Report Ready'
+        const isScanInvestigation =
+          investigationName.includes('x-ray') ||
+          investigationName.includes('ct') ||
+          investigationName.includes('mri') ||
+          investigationName.includes('scan') ||
+          investigationName.includes('ultrasound') ||
+          investigationName.includes('echo') ||
+          investigationName.includes('mammogram');
+
+        const newStatus = isScanInvestigation ? 'Report Ready' : 'Processing';
+
+        return {
+          ...inv,
+          paymentStatus: 'Paid',
+          status: newStatus, // 'Report Ready' for scans, 'Processing' for lab tests
+        };
+      }
+
+      return inv;
+    });
+
+    setLocalInvestigations(updatedInvestigations);
+
+    handleCloseBulkPaymentModal();
+  };
+
+  const handleDownloadResult = async (
+    investigation: InvestigationResponseList,
+  ) => {
     try {
       // Dynamic import to avoid SSR issues
       const html2canvas = (await import('html2canvas')).default;
@@ -139,7 +301,7 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
       tempContainer.style.backgroundColor = 'white';
       tempContainer.style.padding = '20px';
       tempContainer.style.fontFamily = 'Arial, sans-serif';
-      
+
       // Generate report content
       tempContainer.innerHTML = `
         <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
@@ -182,42 +344,45 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
           <p style="margin: 5px 0;">Report ID: ${investigation.investigationRequestId}</p>
         </div>
       `;
-      
+
       document.body.appendChild(tempContainer);
-      
+
       const canvas = await html2canvas(tempContainer, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
       });
-      
+
       document.body.removeChild(tempContainer);
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
+
       const margin = 15;
       const imgWidth = 210 - margin * 2;
       const pageHeight = 297 - margin * 2;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
-      
+
       let position = margin;
-      
+
       pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-      
+
       while (heightLeft >= 0) {
         position = margin - (imgHeight - heightLeft);
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      
-      const fileName = `${investigation.investigationName}_${patientDetail?.patientDisplayName}_Report.pdf`.replace(/[^a-zA-Z0-9]/g, '_');
+
+      const fileName =
+        `${investigation.investigationName}_${patientDetail?.patientDisplayName}_Report.pdf`.replace(
+          /[^a-zA-Z0-9]/g,
+          '_',
+        );
       pdf.save(fileName);
-      
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
@@ -376,9 +541,6 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
 
       // Close modal and refresh data
       handleCloseResultModal();
-
-      // Call refetch to sync with server (when API is implemented)
-      refetch();
     } catch (error) {
       console.error('Error saving result:', error);
     } finally {
@@ -399,16 +561,20 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
       {/* Patient Header */}
       <Grid mb="md" gutter="md" align="flex-start">
         {/* Patient Info */}
-        <Grid.Col 
+        <Grid.Col
           span={{ base: 12, sm: 6, md: 5, lg: 4 }}
           style={{
             borderRight: '1px solid #E9ECEF',
-            paddingRight: '16px'
+            paddingRight: '16px',
           }}
         >
           <Flex align="flex-start" gap="md">
             {patientDetail?.patientImageUrl ? (
-              <Avatar src={patientDetail.patientImageUrl} size="md" radius="md" />
+              <Avatar
+                src={patientDetail.patientImageUrl}
+                size="md"
+                radius="md"
+              />
             ) : (
               <Avatar size="md" radius="xl" bg={appColors.ghostWhite}>
                 <IconUser size={20} color={appColors.blue} />
@@ -429,7 +595,8 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                       style={{ textTransform: 'capitalize' }}
                       fw={500}
                     >
-                      Insurance: {patientDetail?.insuranceInfo?.insuranceProvider}
+                      Insurance:{' '}
+                      {patientDetail?.insuranceInfo?.insuranceProvider}
                     </Badge>
                   </Group>
                 )}
@@ -483,12 +650,12 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
         </Grid.Col>
 
         {/* Investigation Preview Grid (2x2) */}
-        <Grid.Col 
-          span={{ base: 12, sm: 6, md: 6, lg: 7 }}
+        <Grid.Col
+          span={{ base: 12, sm: 6, md: 5, lg: 6 }}
           style={{
             borderRight: '1px solid #E9ECEF',
             paddingLeft: '16px',
-            paddingRight: '16px'
+            paddingRight: '16px',
           }}
         >
           <Grid columns={2} gutter="md">
@@ -515,8 +682,9 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                         backgroundColor: getStatusColor(
                           investigation.status || 'Requested',
                         ).bg,
-                        color: getStatusColor(investigation.status || 'Requested')
-                          .color,
+                        color: getStatusColor(
+                          investigation.status || 'Requested',
+                        ).color,
                         fontSize: '10px',
                       }}
                     >
@@ -534,13 +702,25 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
         </Grid.Col>
 
         {/* Actions */}
-        <Grid.Col 
-          span={{ base: 12, sm: 12, md: 1, lg: 1 }}
+        <Grid.Col
+          span={{ base: 12, sm: 12, md: 2, lg: 2 }}
           style={{
-            paddingLeft: '16px'
+            paddingLeft: '16px',
           }}
         >
-          <Flex justify={{ base: 'center', md: 'flex-end' }} align="flex-start">
+          <Flex
+            direction="column"
+            gap="xs"
+            align={{ base: 'center', md: 'flex-end' }}
+          >
+            <Button
+              size="xs"
+              leftSection={<IconCash size={14} />}
+              onClick={handleBulkPayment}
+              disabled={totalOutstanding === 0}
+            >
+              Pay All Outstanding
+            </Button>
             <ActionIcon
               onClick={() => setExpanded(!expanded)}
               size="lg"
@@ -657,8 +837,8 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                   </Menu.Target>
 
                   <Menu.Dropdown>
-                    {/* Only show Enter result if report is not ready */}
-                    {investigation.status !== 'Report Ready' && (
+                    {/* Only show Enter result if status is Processing (after payment) */}
+                    {investigation.status === 'Processing' && (
                       <Menu.Item
                         leftSection={<IconEdit size={14} />}
                         onClick={() => handleEnterResult(investigation)}
@@ -666,7 +846,7 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                         Enter result
                       </Menu.Item>
                     )}
-                    
+
                     {/* Show Download Result if report is ready */}
                     {investigation.status === 'Report Ready' && (
                       <Menu.Item
@@ -676,14 +856,35 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                         Download Result
                       </Menu.Item>
                     )}
-                    
+
                     <Menu.Item
                       leftSection={<IconInfoCircle size={14} />}
                       onClick={() => handleViewTestInfo(investigation)}
                     >
                       View test info
                     </Menu.Item>
-                    
+
+                    {/* Payment options based on payment status */}
+                    {investigation.paymentStatus === 'Unpaid' && (
+                      <Menu.Item
+                        leftSection={<IconCash size={14} />}
+                        onClick={() => handleProcessPayment(investigation)}
+                        color="blue"
+                      >
+                        Pay for Service
+                      </Menu.Item>
+                    )}
+
+                    {investigation.paymentStatus === 'Partially Paid' && (
+                      <Menu.Item
+                        leftSection={<IconCreditCard size={14} />}
+                        onClick={() => handleProcessPayment(investigation)}
+                        color="orange"
+                      >
+                        Complete Payment
+                      </Menu.Item>
+                    )}
+
                     {/* Only show if test has been paid for */}
                     {investigation.paymentStatus === 'Paid' && (
                       <Menu.Item
@@ -960,38 +1161,56 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                 try {
                   const html2canvas = (await import('html2canvas')).default;
                   const jsPDF = (await import('jspdf')).jsPDF;
-                  
+
                   const element = document.getElementById('invoice-content');
                   if (element) {
                     const canvas = await html2canvas(element, {
                       scale: 2,
                       useCORS: true,
                       allowTaint: true,
-                      backgroundColor: '#ffffff'
+                      backgroundColor: '#ffffff',
                     });
-                    
+
                     const imgData = canvas.toDataURL('image/png');
                     const pdf = new jsPDF('p', 'mm', 'a4');
-                    
+
                     const margin = 15;
                     const imgWidth = 210 - margin * 2;
                     const pageHeight = 297 - margin * 2;
                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
                     let heightLeft = imgHeight;
-                    
+
                     let position = margin;
-                    
-                    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+
+                    pdf.addImage(
+                      imgData,
+                      'PNG',
+                      margin,
+                      position,
+                      imgWidth,
+                      imgHeight,
+                    );
                     heightLeft -= pageHeight;
-                    
+
                     while (heightLeft >= 0) {
                       position = margin - (imgHeight - heightLeft);
                       pdf.addPage();
-                      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+                      pdf.addImage(
+                        imgData,
+                        'PNG',
+                        margin,
+                        position,
+                        imgWidth,
+                        imgHeight,
+                      );
                       heightLeft -= pageHeight;
                     }
-                    
-                    const fileName = `Invoice_${selectedInvoiceInvestigation?.investigationName}_${patientDetail?.patientDisplayName}.pdf`.replace(/[^a-zA-Z0-9]/g, '_');
+
+                    const fileName =
+                      `Invoice_${selectedInvoiceInvestigation?.investigationName}_${patientDetail?.patientDisplayName}.pdf`.replace(
+                        /[^a-zA-Z0-9]/g,
+                        '_',
+                      );
                     pdf.save(fileName);
                   }
                 } catch (error) {
@@ -1006,7 +1225,12 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
         }
       >
         <Box mt={15}>
-          <Box id="invoice-content" bg="white" p="md" style={{ borderRadius: '10px' }}>
+          <Box
+            id="invoice-content"
+            bg="white"
+            p="md"
+            style={{ borderRadius: '10px' }}
+          >
             {/* Invoice Header */}
             <div className="header">
               <Text size="xl" fw={700} mb="xs">
@@ -1016,7 +1240,8 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                 Invoice Date: {new Date().toLocaleDateString()}
               </Text>
               <Text size="sm" c="dimmed">
-                Invoice ID: INV-{selectedInvoiceInvestigation?.investigationRequestId}
+                Invoice ID: INV-
+                {selectedInvoiceInvestigation?.investigationRequestId}
               </Text>
             </div>
 
@@ -1070,7 +1295,9 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
               <Text size="sm">
                 <strong>Date Requested:</strong>{' '}
                 {selectedInvoiceInvestigation?.dateCreatedOrLastModified &&
-                  formatDate(selectedInvoiceInvestigation.dateCreatedOrLastModified)}
+                  formatDate(
+                    selectedInvoiceInvestigation.dateCreatedOrLastModified,
+                  )}
               </Text>
               <Text size="sm">
                 <strong>Payment Status:</strong>{' '}
@@ -1094,12 +1321,16 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                   <td>1</td>
                   <td>
                     {selectedInvoiceInvestigation?.amount
-                      ? formatCurrency(selectedInvoiceInvestigation.amount.amount)
+                      ? formatCurrency(
+                          selectedInvoiceInvestigation.amount.amount,
+                        )
                       : '₦0.00'}
                   </td>
                   <td>
                     {selectedInvoiceInvestigation?.amount
-                      ? formatCurrency(selectedInvoiceInvestigation.amount.amount)
+                      ? formatCurrency(
+                          selectedInvoiceInvestigation.amount.amount,
+                        )
                       : '₦0.00'}
                   </td>
                 </tr>
@@ -1115,14 +1346,16 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
                   : '₦0.00'}
               </Text>
               <Text size="sm" c="dimmed" mt="xs">
-                Payment Status: {selectedInvoiceInvestigation?.paymentStatus || 'Pending'}
+                Payment Status:{' '}
+                {selectedInvoiceInvestigation?.paymentStatus || 'Pending'}
               </Text>
             </div>
 
             {/* Footer */}
             <div className="footer">
               <Text size="xs">
-                This invoice was generated electronically and is valid without signature.
+                This invoice was generated electronically and is valid without
+                signature.
               </Text>
               <Text size="xs">
                 For inquiries, please contact the billing department.
@@ -1131,6 +1364,33 @@ const SimpleLabQueueBox: React.FC<SimpleLabQueueBoxProps> = ({
           </Box>
         </Box>
       </ModalLayoutWrapper>
+
+      {/* Payment Modal */}
+      <LabPaymentModal
+        opened={paymentModalOpened}
+        onClose={handleClosePaymentModal}
+        selectedInvestigation={selectedPaymentInvestigation}
+        patientDetail={patientDetail}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      {/* Patient Info Modal */}
+      <ViewPatientInfoModal
+        opened={patientInfoModalOpened}
+        onClose={handleClosePatientInfoModal}
+        patientDetail={patientDetail}
+        investigationDetails={selectedPatientInfoInvestigation}
+      />
+
+      {/* Bulk Payment Modal */}
+      <LabBulkPaymentModal
+        opened={bulkPaymentModalOpened}
+        onClose={handleCloseBulkPaymentModal}
+        investigations={investigations}
+        patientDetail={patientDetail}
+        onPaymentSuccess={handleBulkPaymentSuccess}
+        totalOutstanding={totalOutstanding}
+      />
     </Box>
   );
 };

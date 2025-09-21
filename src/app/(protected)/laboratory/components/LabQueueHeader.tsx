@@ -6,19 +6,17 @@ import {
   Flex,
   Select,
   Box,
-  Loader,
-  Text,
 } from '@mantine/core';
 import styled from '@emotion/styled';
 import { IconSearch } from '@tabler/icons-react';
 // import { useLoggedInUser } from '@/state/hooks';
 import { appColors } from '@/theme/colors';
-import IconArrowInput from '@/components/shared/IconComponents/IconArrowInput';
 import IconSort from '@/components/shared/IconComponents/IconSort';
-import { SORT_DATA } from '../../receiptionist/components/constant';
 import { Pagination } from '@/components/shared/CustomPagination';
 import { useMediaQuery } from '@mantine/hooks';
 import { IoFilter } from 'react-icons/io5';
+import RequestInvestigationModal from './RequestInvestigationModal';
+import { showNotification } from '@mantine/notifications';
 
 const InputSearchHeader = styled(TextInput)`
   width: 100%;
@@ -55,6 +53,7 @@ interface HeaderProps {
   handleSortData: (args: string | never) => void;
   setQuery: Dispatch<SetStateAction<string>>;
   pagination: PaginationData;
+  onInvestigationRequested?: () => void;
 }
 
 const sortData: SortItem[] = [
@@ -74,12 +73,14 @@ const Header = ({
   handleSortData,
   setQuery,
   pagination,
+  onInvestigationRequested,
 }: HeaderProps) => {
   const [statusesValue, setStatusesValue] = useState<string | null>(
     'All Investigations',
   );
   const [typeValue, setTypeValue] = useState<string | null>('All categories');
   const [sortValue, setSortValue] = useState<string | null>(null);
+  const [requestModalOpened, setRequestModalOpened] = useState(false);
   
   const isMobile = useMediaQuery('(max-width: 50rem)');
   const totalItems = pagination.items;
@@ -107,6 +108,31 @@ const Header = ({
     }
   };
   
+  // Handle request investigation modal
+  const handleRequestInvestigation = () => {
+    setRequestModalOpened(true);
+  };
+
+  const handleModalClose = () => {
+    setRequestModalOpened(false);
+  };
+
+  const handleInvestigationSubmit = (data: any) => {
+    console.log('Investigation request submitted:', data);
+    
+    showNotification({
+      title: 'Success',
+      message: `Investigation request submitted for ${data.patient.name}`,
+      color: 'green',
+    });
+
+    // Call parent callback if provided
+    onInvestigationRequested?.();
+
+    // Close modal
+    setRequestModalOpened(false);
+  };
+
   // Dummy logged in user data
   const loggedInUser = {
     role: 'laboratory administrator',
@@ -172,7 +198,9 @@ const Header = ({
               rightSection={<IconSearch size={18} />}
             />
           </Flex>
-          <Button h={'2.5rem'}>Request Investigation</Button>
+          <Button h={'2.5rem'} onClick={handleRequestInvestigation}>
+            Request Investigation
+          </Button>
         </Flex>
 
         <Flex
@@ -259,6 +287,13 @@ const Header = ({
           </Flex>
         </Flex>
       </Flex>
+
+      {/* Request Investigation Modal */}
+      <RequestInvestigationModal
+        opened={requestModalOpened}
+        onClose={handleModalClose}
+        onSubmit={handleInvestigationSubmit}
+      />
     </Box>
   );
 };

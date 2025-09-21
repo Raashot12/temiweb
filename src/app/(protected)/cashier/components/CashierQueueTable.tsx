@@ -1,29 +1,28 @@
 'use client';
 
-// import { useLoggedInUser } from '@/state/hooks';
 import { statusMappingForFilter } from '@/utils/constants';
 import styled from '@emotion/styled';
 import { Alert, Center, Flex, Loader, Modal, Text } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconAlertCircle } from '@tabler/icons-react';
 import React, { useState, useEffect } from 'react';
-import Header from './LabQueueHeader';
-import SimpleLabQueueBox from './SimpleLabQueueBox';
 import { InvestigationsForLaboratoryQueueResponse } from '@/types/index';
-import NoRecordFound from './NoRecordFound';
+import NoRecordFound from '../../laboratory/components/NoRecordFound';
 import Dashboard from '@/layouts/Dashboard';
+import CashierHeader from './CashierHeader';
+import CashierQueueBox from './CashierQueueBox';
 
 const AccordionContainer = styled.div`
   margin-top: 17px;
 `;
 
-const LabQueueTable = () => {
+const CashierQueueTable = () => {
   // Dummy logged in user data
   const loggedInUser = {
-    role: 'cashier', 
+    role: 'cashier',
     id: 1,
-    name: 'Dr. John Doe',
-    email: 'john.doe@example.com',
+    name: 'John Cashier',
+    email: 'john.cashier@example.com',
   };
   const [query, setQuery] = useState('');
   const [opened, setOpened] = useState<boolean>(false);
@@ -33,7 +32,7 @@ const LabQueueTable = () => {
   const [isOpeningInvoiceModal, setIsOpeningInvoiceModal] = useState(false);
   const [selectedValueTwo, setSelectedValueTwo] = useState<string | null>('');
   const [sortby, setSortyBy] = useState<string | never>(
-    'Most Recent Investigations',
+    'Recent Pending Payments',
   );
 
   const [invoiceModal, setInvoiceModal] = useState(false);
@@ -47,18 +46,16 @@ const LabQueueTable = () => {
     setSortyBy(args);
   };
 
-  // Mock data for laboratory queue
-  const [laboratoryData, setLaboratoryData] = useState<{
+  // Mock data for cashier queue - focusing on billing/payment
+  const [cashierData, setCashierData] = useState<{
     totalCount: number;
     items: InvestigationsForLaboratoryQueueResponse[];
   }>({ totalCount: 0, items: [] });
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
 
-  // Remove duplicate mock data - using the one in useMemo below
-
-  // Mock laboratory data - moved to useMemo to fix dependency warning
-  const mockLaboratoryData = React.useMemo(
+  // Mock cashier data with payment focus
+  const mockCashierData = React.useMemo(
     (): InvestigationsForLaboratoryQueueResponse[] => [
       {
         patientDetail: {
@@ -105,19 +102,16 @@ const LabQueueTable = () => {
               lastName: 'Chen',
               unit: 'Internal Medicine',
             },
-            status: 'Requested',
-            isSampleTaken: true,
+            status: 'Invoiced',
+            isSampleTaken: false,
             dataEntryUser: 'Lab Tech 1',
-            reviewerFullName: 'Dr. Sarah Wilson',
+            reviewerFullName: null,
             invoiceItemId: 1,
             invoiceId: 1,
-            investigationReviewerId: 1,
+            investigationReviewerId: null,
             isDeleted: false,
             updateIsDisabled: false,
-            reviewer: {
-              reviewerId: 1,
-              reviewerFullname: 'Dr. Sarah Wilson',
-            },
+            reviewer: undefined,
           },
           {
             sampleNo: 'LAB002',
@@ -138,10 +132,10 @@ const LabQueueTable = () => {
               lastName: 'Chen',
               unit: 'Internal Medicine',
             },
-            status: 'Requested',
-            isSampleTaken: true,
+            status: 'Invoiced',
+            isSampleTaken: false,
             dataEntryUser: 'Lab Tech 2',
-            paymentStatus: 'Paid',
+            paymentStatus: 'Unpaid',
             reviewerFullName: null,
             invoiceItemId: 2,
             invoiceId: 1,
@@ -196,254 +190,71 @@ const LabQueueTable = () => {
               lastName: 'Davis',
               unit: 'Surgery',
             },
-            status: 'Requested',
+            status: 'Invoiced',
             isSampleTaken: false,
             dataEntryUser: 'Radiology Tech',
-            reviewerFullName: 'Dr. Robert Brown',
-            paymentStatus: 'Unpaid',
+            reviewerFullName: null,
+            paymentStatus: 'Partially Paid',
             invoiceItemId: 3,
             invoiceId: 2,
-            investigationReviewerId: 2,
+            investigationReviewerId: null,
             isDeleted: false,
             updateIsDisabled: false,
-            reviewer: {
-              reviewerId: 2,
-              reviewerFullname: 'Dr. Robert Brown',
-            },
+            reviewer: undefined,
           },
         ],
       },
       {
         patientDetail: {
           patientId: 3,
-          firstName: 'Maria',
-          lastName: 'Garcia',
-          patientDisplayName: 'Maria Garcia',
+          firstName: 'Mary',
+          lastName: 'Williams',
+          patientDisplayName: 'Mary Williams',
           patientCode: 'PT2024003',
           age: '28 years',
           gender: 'Female',
-          ward: 'Emergency Ward',
-          wardBed: 'Bed 5',
+          ward: 'Pediatric Ward',
+          wardBed: 'Bed 12',
           hasInsurance: true,
           phoneNumber: '+234 803 456 7890',
           patientImageUrl: null,
           lastModifiedTime: new Date().toISOString(),
           creationTime: new Date().toISOString(),
-          emailAddress: 'maria.garcia@email.com',
-          walletBalance: 8000,
+          emailAddress: 'mary.williams@email.com',
+          walletBalance: 25000,
           insuranceInfo: {
-            insuranceType: 'Corporate',
-            insuranceNumber: 'INS789012',
-            insuranceProvider: 'AIICO Insurance',
-          },
-        },
-        investigationItems: [
-          {
-            sampleNo: 'LAB004',
-            investigationName: 'Urine Analysis',
-            investigationNote: 'UTI investigation',
-            specimen: 'Urine',
-            organism: null,
-            amount: { amount: 3500, currency: 'NGN' },
-            dateCreatedOrLastModified: '2024-01-17T11:15:00Z',
-            investigationCategory: 'Microbiology',
-            investigationId: 4,
-            investigationRequestId: 4,
-            encounterId: 3,
-            paymentStatus: 'Unpaid',
-            creatorOrModifierInfo: {
-              title: 'Dr.',
-              name: 'James Wilson',
-              firstName: 'James',
-              lastName: 'Wilson',
-              unit: 'Emergency Medicine',
-            },
-            status: 'Requested',
-            isSampleTaken: false,
-            dataEntryUser: 'Lab Tech 3',
-            reviewerFullName: null,
-            invoiceItemId: 4,
-            invoiceId: 3,
-            investigationReviewerId: null,
-            isDeleted: false,
-            updateIsDisabled: false,
-            reviewer: undefined,
-          },
-          {
-            sampleNo: 'LAB005',
-            investigationName: 'Blood Sugar Level',
-            investigationNote: 'Diabetes screening',
-            specimen: 'Blood',
-            organism: null,
-            amount: { amount: 2500, currency: 'NGN' },
-            dateCreatedOrLastModified: '2024-01-17T11:30:00Z',
-            investigationCategory: 'Chemistry',
-            investigationId: 5,
-            investigationRequestId: 5,
-            encounterId: 3,
-            paymentStatus: 'Unpaid',
-            creatorOrModifierInfo: {
-              title: 'Dr.',
-              name: 'James Wilson',
-              firstName: 'James',
-              lastName: 'Wilson',
-              unit: 'Emergency Medicine',
-            },
-            status: 'Requested',
-            isSampleTaken: false,
-            dataEntryUser: 'Lab Tech 3',
-            reviewerFullName: null,
-            invoiceItemId: 5,
-            invoiceId: 3,
-            investigationReviewerId: null,
-            isDeleted: false,
-            updateIsDisabled: false,
-            reviewer: undefined,
-          },
-        ],
-      },
-      {
-        patientDetail: {
-          patientId: 4,
-          firstName: 'David',
-          lastName: 'Okafor',
-          patientDisplayName: 'David Okafor',
-          patientCode: 'PT2024004',
-          age: '52 years',
-          gender: 'Male',
-          ward: 'Cardiology Ward',
-          wardBed: 'Bed 12',
-          hasInsurance: true,
-          phoneNumber: '+234 804 567 8901',
-          patientImageUrl: null,
-          lastModifiedTime: new Date().toISOString(),
-          creationTime: new Date().toISOString(),
-          emailAddress: 'david.okafor@email.com',
-          walletBalance: 15000,
-          insuranceInfo: {
-            insuranceType: 'NHIS',
-            insuranceNumber: 'NHIS345678',
+            insuranceType: 'Government',
+            insuranceNumber: 'NHIS789012',
             insuranceProvider: 'NHIS',
           },
         },
         investigationItems: [
           {
-            sampleNo: 'LAB006',
-            investigationName: 'ECG',
-            investigationNote: 'Cardiac assessment',
-            specimen: null,
-            organism: null,
-            amount: { amount: 8500, currency: 'NGN' },
-            dateCreatedOrLastModified: '2024-01-18T09:00:00Z',
-            investigationCategory: 'Cardiology',
-            investigationId: 6,
-            investigationRequestId: 6,
-            encounterId: 4,
-            paymentStatus: 'Unpaid',
-            creatorOrModifierInfo: {
-              title: 'Dr.',
-              name: 'Patricia Adams',
-              firstName: 'Patricia',
-              lastName: 'Adams',
-              unit: 'Cardiology',
-            },
-            status: 'Requested',
-            isSampleTaken: false,
-            dataEntryUser: 'Cardio Tech',
-            reviewerFullName: 'Dr. Michael Roberts',
-            invoiceItemId: 6,
-            invoiceId: 4,
-            investigationReviewerId: 3,
-            isDeleted: false,
-            updateIsDisabled: false,
-            reviewer: {
-              reviewerId: 3,
-              reviewerFullname: 'Dr. Michael Roberts',
-            },
-          },
-        ],
-      },
-      {
-        patientDetail: {
-          patientId: 5,
-          firstName: 'Fatima',
-          lastName: 'Abdullah',
-          patientDisplayName: 'Fatima Abdullah',
-          patientCode: 'PT2024005',
-          age: '39 years',
-          gender: 'Female',
-          ward: 'Maternity Ward',
-          wardBed: 'Bed 3',
-          hasInsurance: false,
-          phoneNumber: '+234 805 678 9012',
-          patientImageUrl: null,
-          lastModifiedTime: new Date().toISOString(),
-          creationTime: new Date().toISOString(),
-          emailAddress: 'fatima.abdullah@email.com',
-          walletBalance: 20000,
-          insuranceInfo: undefined,
-        },
-        investigationItems: [
-          {
-            sampleNo: 'LAB007',
-            investigationName: 'Ultrasound Scan',
-            investigationNote: 'Prenatal checkup',
-            specimen: null,
-            organism: null,
-            amount: { amount: 15000, currency: 'NGN' },
-            dateCreatedOrLastModified: '2024-01-19T14:20:00Z',
-            investigationCategory: 'Radiology',
-            investigationId: 7,
-            investigationRequestId: 7,
-            encounterId: 5,
-            paymentStatus: 'Partially Paid',
-            creatorOrModifierInfo: {
-              title: 'Dr.',
-              name: 'Susan Clarke',
-              firstName: 'Susan',
-              lastName: 'Clarke',
-              unit: 'Obstetrics',
-            },
-            status: 'Requested',
-            isSampleTaken: false,
-            dataEntryUser: 'Ultrasound Tech',
-            reviewerFullName: 'Dr. Linda Thompson',
-            invoiceItemId: 7,
-            invoiceId: 5,
-            investigationReviewerId: 4,
-            isDeleted: false,
-            updateIsDisabled: false,
-            reviewer: {
-              reviewerId: 4,
-              reviewerFullname: 'Dr. Linda Thompson',
-            },
-          },
-          {
-            sampleNo: 'LAB008',
-            investigationName: 'Full Blood Count',
-            investigationNote: 'Routine antenatal care',
+            sampleNo: 'LAB004',
+            investigationName: 'Malaria Parasite Test',
+            investigationNote: 'Fever investigation',
             specimen: 'Blood',
             organism: null,
-            amount: { amount: 4500, currency: 'NGN' },
-            dateCreatedOrLastModified: '2024-01-19T14:45:00Z',
-            investigationCategory: 'Hematology',
-            investigationId: 8,
-            investigationRequestId: 8,
-            encounterId: 5,
-            paymentStatus: 'Unpaid',
+            amount: { amount: 2500, currency: 'NGN' },
+            dateCreatedOrLastModified: '2024-01-17T11:30:00Z',
+            investigationCategory: 'Parasitology',
+            investigationId: 4,
+            investigationRequestId: 4,
+            encounterId: 3,
             creatorOrModifierInfo: {
               title: 'Dr.',
-              name: 'Susan Clarke',
-              firstName: 'Susan',
-              lastName: 'Clarke',
-              unit: 'Obstetrics',
+              name: 'James Wilson',
+              firstName: 'James',
+              lastName: 'Wilson',
+              unit: 'Family Medicine',
             },
-            status: 'Requested',
+            status: 'Invoiced',
             isSampleTaken: false,
-            dataEntryUser: 'Lab Tech 4',
+            dataEntryUser: null,
             reviewerFullName: null,
-            invoiceItemId: 8,
-            invoiceId: 5,
+            paymentStatus: 'Unpaid',
+            invoiceItemId: 4,
+            invoiceId: 3,
             investigationReviewerId: null,
             isDeleted: false,
             updateIsDisabled: false,
@@ -455,13 +266,12 @@ const LabQueueTable = () => {
     [],
   );
 
-  // Filter and search logic
+  // Filter and search logic for cashier - focus on unpaid/partially paid items
   useEffect(() => {
     setIsLoading(true);
 
-    // Simulate API delay
     const timer = setTimeout(() => {
-      let filteredData = [...mockLaboratoryData];
+      let filteredData = [...mockCashierData];
 
       // Apply search filter
       if (debounceQuery) {
@@ -476,14 +286,14 @@ const LabQueueTable = () => {
         );
       }
 
-      // Apply status filter
-      if (selectedValue && selectedValue !== 'All Investigations') {
+      // Apply payment status filter
+      if (selectedValue && selectedValue !== 'All Payments') {
         filteredData = filteredData
           .map((patient) => ({
             ...patient,
             investigationItems:
               patient.investigationItems?.filter(
-                (item) => item.status === selectedValue,
+                (item) => item.paymentStatus === selectedValue,
               ) || [],
           }))
           .filter(
@@ -515,7 +325,7 @@ const LabQueueTable = () => {
       const endIndex = startIndex + MAX_RESULT_PER_PAGE;
       const paginatedData = filteredData.slice(startIndex, endIndex);
 
-      setLaboratoryData({
+      setCashierData({
         totalCount: filteredData.length,
         items: paginatedData,
       });
@@ -528,13 +338,25 @@ const LabQueueTable = () => {
     selectedValue,
     selectedValueTwo,
     pagination.numStart,
-    mockLaboratoryData,
+    mockCashierData,
   ]);
 
   // Reset pagination when search changes
   useEffect(() => {
     setPagination((prev) => ({ ...prev, numStart: 0 }));
   }, [debounceQuery]);
+
+  const refetch = () => {
+    console.log('Refetching cashier data...');
+  };
+
+  const handleModalOpen = () => {
+    setOpened(true);
+  };
+
+  const handleInvoiceModal = () => {
+    setInvoiceModal(true);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
@@ -544,37 +366,29 @@ const LabQueueTable = () => {
     setPagination({ numStart: from, numEnd: to });
   };
 
-  const checkScientistTechnician = [
-    'laboratory scientist',
-    'laboratory technician',
-  ].includes(loggedInUser?.role as string);
-
-  function filterPatientInvestigations(
-    labInvestigationItems?: InvestigationsForLaboratoryQueueResponse[],
+  // Filter for cashier - show only invoiced items that need payment
+  function filterCashierInvestigations(
+    cashierInvestigationItems?: InvestigationsForLaboratoryQueueResponse[],
   ) {
-    if (checkScientistTechnician) {
-      return labInvestigationItems
-        ?.map((patient) => {
-          const filteredInvestigations = patient?.investigationItems?.filter(
-            (item) => item.status !== 'Requested' && item.status !== 'Invoiced',
-          );
-          return {
-            ...patient,
-            investigationItems: filteredInvestigations,
-          };
-        })
-        .filter(
-          (patient) =>
-            patient.investigationItems && patient.investigationItems.length > 0,
+    return cashierInvestigationItems
+      ?.map((patient) => {
+        const filteredInvestigations = patient?.investigationItems?.filter(
+          (item) => item.status === 'Invoiced' && item.paymentStatus !== 'Paid',
         );
-    }
-
-    return labInvestigationItems ?? [];
+        return {
+          ...patient,
+          investigationItems: filteredInvestigations,
+        };
+      })
+      .filter(
+        (patient) =>
+          patient.investigationItems && patient.investigationItems.length > 0,
+      ) ?? [];
   }
 
   return (
-    <Dashboard title="Laboratory">
-      <Header
+    <Dashboard title="Cashier - Payment Processing">
+      <CashierHeader
         query={query}
         setSelectedValue={setSelectedValue}
         setSelectedValueTwo={setSelectedValueTwo}
@@ -583,10 +397,10 @@ const LabQueueTable = () => {
         pagination={{
           itemsPerPage: MAX_RESULT_PER_PAGE,
           handlePagination,
-          items: laboratoryData?.totalCount ? laboratoryData?.totalCount : 0,
+          items: cashierData?.totalCount ? cashierData?.totalCount : 0,
         }}
       />
-      <AccordionContainer data-cy="laboratory-queue-container">
+      <AccordionContainer data-cy="cashier-queue-container">
         {isLoading ? (
           <Center>
             <Loader />
@@ -599,13 +413,13 @@ const LabQueueTable = () => {
             variant="outline"
             withCloseButton
           >
-            Error Fetching Lab queue data
+            Error Fetching Payment queue data
           </Alert>
         ) : (
           <>
             {query.length > 1 &&
-            (filterPatientInvestigations(
-              laboratoryData?.items as InvestigationsForLaboratoryQueueResponse[],
+            (filterCashierInvestigations(
+              cashierData?.items as InvestigationsForLaboratoryQueueResponse[],
             )?.length as number) <= 0 ? (
               <Alert
                 icon={<IconAlertCircle size="1rem" />}
@@ -617,24 +431,25 @@ const LabQueueTable = () => {
                 No Search found in the database
               </Alert>
             ) : query.length <= 0 &&
-              (filterPatientInvestigations(
-                laboratoryData?.items as InvestigationsForLaboratoryQueueResponse[],
+              (filterCashierInvestigations(
+                cashierData?.items as InvestigationsForLaboratoryQueueResponse[],
               )?.length as number) <= 0 ? (
               <NoRecordFound
-                mainText="No data recorded"
-                subText="Laboratory Queue will be displayed here when available"
+                mainText="No pending payments"
+                subText="Payment queue will be displayed here when available"
                 wrapperStyles={{ height: '100%', padding: '40px 0' }}
               />
             ) : (
               <>
-                {filterPatientInvestigations(
-                  laboratoryData?.items as InvestigationsForLaboratoryQueueResponse[],
+                {filterCashierInvestigations(
+                  cashierData?.items as InvestigationsForLaboratoryQueueResponse[],
                 )?.map((value) => {
                   return (
-                    <SimpleLabQueueBox
+                    <CashierQueueBox
                       key={value?.patientDetail?.patientId}
                       value={value}
                       patientId={value.patientDetail?.patientId as number}
+                      refetch={refetch}
                       sortby={sortby}
                     />
                   );
@@ -644,25 +459,6 @@ const LabQueueTable = () => {
           </>
         )}
       </AccordionContainer>
-      {/* {opened && (
-        <LaboratoryRequestInvestigation
-          toggleClose={() => setOpened(false)}
-          opened={opened}
-          refetch={refetch}
-          setIsOpeningInvoiceModal={setIsOpeningInvoiceModal}
-          setOpened={setOpened}
-          handleOpenCheckoutModal={handleRequestInvestigationCheckoutModalOpen}
-          setPatientDetails={setPatientDetails}
-        />
-      )}
-      {invoiceModal && (
-        <RequestInvestigationCreateInvoice
-          patientDetails={patientDetails}
-          refetch={refetch}
-          invoiceModal={invoiceModal}
-          setInvoiceModal={setInvoiceModal}
-        />
-      )} */}
       {isOpeningInvoiceModal && (
         <Modal
           sx={{
@@ -680,7 +476,7 @@ const LabQueueTable = () => {
             <Flex direction={'column'} align={'center'}>
               <Loader color="white" size={'md'} />
               <Text color="white" fw={600} mt={10}>
-                Please wait....
+                Processing payment....
               </Text>
             </Flex>
           </Center>
@@ -690,4 +486,4 @@ const LabQueueTable = () => {
   );
 };
 
-export default LabQueueTable;
+export default CashierQueueTable;
